@@ -1,0 +1,79 @@
+{
+    "dataRoles": [
+        {
+            "displayName": "Table Data",
+            "name": "tableData",
+            "kind": "GroupingOrMeasure",
+            "description": "Bind any columns or measures from your semantic model. The visual will use these to answer questions."
+        }
+    ],
+    "objects": {
+        "databricksConfig": {
+            "properties": {
+                "proxyUrl": {
+                    "type": { "text": true }
+                },
+                "endpointName": {
+                    "type": { "text": true }
+                },
+                "apiToken": {
+                    "type": { "text": true }
+                },
+                "workspaceUrl": {
+                    "type": { "text": true }
+                }
+            }
+        },
+        "llmConfig": {
+            "properties": {
+                "systemPrompt": {
+                    "type": { "text": true }
+                },
+                "maxTokens": {
+                    "type": { "numeric": true }
+                },
+                "temperature": {
+                    "type": { "numeric": true }
+                },
+                "maxSampleRows": {
+                    "type": { "numeric": true }
+                }
+            }
+        },
+        "uiConfig": {
+            "properties": {
+                "placeholderText": {
+                    "type": { "text": true }
+                },
+                "accentColor": {
+                    "type": {
+                        "fill": {
+                            "solid": { "color": true }
+                        }
+                    }
+                },
+                "assistantName": {
+                    "type": { "text": true }
+                },
+                "showDataContext": {
+                    "type": { "bool": true }
+                }
+            }
+        }
+    },
+    "dataViewMappings": [
+        {
+            "table": {
+                "rows": {
+                    "for": { "in": "tableData" },
+                    "dataReductionAlgorithm": {
+                        "top": { "count": 1000 }
+                    }
+                }
+            }
+        }
+    ],
+    "privileges": [],
+    "supportsLandingPage": true,
+    "supportsEmptyDataView": true
+}

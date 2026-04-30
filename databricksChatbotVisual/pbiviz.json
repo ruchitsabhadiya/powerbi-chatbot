@@ -1,0 +1,26 @@
+{
+  "visual": {
+    "name": "databricksChatbotVisual",
+    "displayName": "Databricks AI Chatbot",
+    "guid": "databricksChatbotVisual07FA9663138847BD97D04D210DF13582",
+    "visualClassName": "Visual",
+    "version": "1.0.0.0",
+    "description": "Ask natural language questions about your Power BI data using a Databricks LLM.",
+    "supportUrl": "https://databricks.com",
+    "gitHubUrl": ""
+  },
+  "apiVersion": "5.11.0",
+  "author": {
+    "name": "Databricks AI",
+    "email": "support@databricks.com"
+  },
+  "assets": {
+    "icon": "assets/icon.png"
+  },
+  "externalJS": null,
+  "style": "style/visual.less",
+  "capabilities": "capabilities.json",
+  "dependencies": null,
+  "stringResources": [],
+  "version": "1.0.0.0"
+}

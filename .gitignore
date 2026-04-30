@@ -1,0 +1,8 @@
+node_modules/
+.tmp/
+dist/
+.vscode/
+*.pbiviz
+__pycache__/
+*.pyc
+.env
