@@ -1,7 +1,3 @@
 command:
-  - "uvicorn"
-  - "proxy_app:app"
-  - "--host"
-  - "0.0.0.0"
-  - "--port"
-  - "${DATABRICKS_APP_PORT}"
+  - "python"
+  - "proxy_app.py"
