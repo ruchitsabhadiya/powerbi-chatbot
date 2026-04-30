@@ -16,18 +16,11 @@ import json
 import logging
 from typing import Optional
 
-import os
-import json
-import logging
-from typing import Optional
-
 import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from databricks.sdk import WorkspaceClient
-from databricks.sdk.service.serving import ChatMessage as DbChatMessage
 
 # ─── App Setup ────────────────────────────────────────────────────────────────
 
@@ -75,7 +68,7 @@ class ChatRequest(BaseModel):
     messages: list[ChatMessage]                         # Full conversation history
     dataContext: Optional[DataContext] = None
     endpointName: str = Field(..., description="Databricks serving endpoint name")
-    apiToken: Optional[str] = Field(None, description="Optional PAT. If omitted, uses App Service Principal.")
+    apiToken: str = Field(..., description="Databricks Personal Access Token")
     workspaceUrl: str = Field(..., description="Databricks workspace URL")
     systemPrompt: str = "You are a helpful data analyst."
     maxTokens: int = Field(default=512, ge=50, le=4096)
@@ -132,54 +125,28 @@ async def chat(request: ChatRequest):
     logger.info(f"Calling Databricks endpoint: {request.endpointName} | messages: {len(messages)}")
 
     try:
-        # If the user provided a PAT in Power BI, use raw HTTP (legacy method)
-        if request.apiToken and request.apiToken.strip():
-            logger.info("Using provided API Token (PAT)")
-            async with httpx.AsyncClient(timeout=60.0) as client:
-                resp = await client.post(
-                    f"{workspace_url}/serving-endpoints/{request.endpointName}/invocations",
-                    headers={
-                        "Authorization": f"Bearer {request.apiToken}",
-                        "Content-Type": "application/json",
-                    },
-                    json=payload,
-                )
-
-            if resp.status_code != 200:
-                error_body = resp.text
-                logger.error(f"Databricks error {resp.status_code}: {error_body}")
-                raise HTTPException(
-                    status_code=resp.status_code,
-                    detail=f"Databricks endpoint returned {resp.status_code}: {_safe_error(error_body)}"
-                )
-
-            result = resp.json()
-            answer = result["choices"][0]["message"]["content"]
-            tokens_used = result.get("usage", {}).get("total_tokens")
-            model = result.get("model", request.endpointName)
-            
-        else:
-            # Native Databricks App Auth (OAuth M2M)
-            logger.info("Using Native Databricks App Service Principal (OAuth)")
-            
-            # The SDK automatically detects DATABRICKS_CLIENT_ID and DATABRICKS_CLIENT_SECRET
-            # injected by the Databricks App runtime.
-            w = WorkspaceClient(host=workspace_url)
-            
-            # Convert messages to SDK format
-            sdk_messages = [DbChatMessage(role=m["role"], content=m["content"]) for m in messages]
-            
-            response = w.serving_endpoints.query(
-                name=request.endpointName,
-                messages=sdk_messages,
-                max_tokens=request.maxTokens,
-                temperature=request.temperature
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(
+                endpoint_url,
+                headers={
+                    "Authorization": f"Bearer {request.apiToken}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
             )
-            
-            # Extract response
-            answer = response.choices[0].message.content if response.choices else ""
-            tokens_used = response.usage.total_tokens if response.usage else None
-            model = response.model or request.endpointName
+
+        if resp.status_code != 200:
+            error_body = resp.text
+            logger.error(f"Databricks error {resp.status_code}: {error_body}")
+            raise HTTPException(
+                status_code=resp.status_code,
+                detail=f"Databricks endpoint returned {resp.status_code}: {_safe_error(error_body)}"
+            )
+
+        result = resp.json()
+        answer = result["choices"][0]["message"]["content"]
+        tokens_used = result.get("usage", {}).get("total_tokens")
+        model = result.get("model", request.endpointName)
 
         return ChatResponse(answer=answer, tokensUsed=tokens_used, model=model)
 
@@ -243,4 +210,5 @@ def _safe_error(body: str) -> str:
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("DATABRICKS_APP_PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
